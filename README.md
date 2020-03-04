@@ -1,7 +1,7 @@
-<h1 align="center">{{PROJECTNAME}}</h1>
+<h1 align="center">async-sse</h1>
 <div align="center">
   <strong>
-    {{DESCRIPTION}}
+    Async Server Sent Event parser and encoder
   </strong>
 </div>
 
@@ -9,17 +9,17 @@
 
 <div align="center">
   <!-- Crates version -->
-  <a href="https://crates.io/crates/{{PROJECTNAME}}">
-    <img src="https://img.shields.io/crates/v/{{PROJECTNAME}}.svg?style=flat-square"
+  <a href="https://crates.io/crates/async-sse">
+    <img src="https://img.shields.io/crates/v/async-sse.svg?style=flat-square"
     alt="Crates.io version" />
   </a>
   <!-- Downloads -->
-  <a href="https://crates.io/crates/{{PROJECTNAME}}">
-    <img src="https://img.shields.io/crates/d/{{PROJECTNAME}}.svg?style=flat-square"
+  <a href="https://crates.io/crates/async-sse">
+    <img src="https://img.shields.io/crates/d/async-sse.svg?style=flat-square"
       alt="Download" />
   </a>
   <!-- docs.rs docs -->
-  <a href="https://docs.rs/{{PROJECTNAME}}">
+  <a href="https://docs.rs/async-sse">
     <img src="https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square"
       alt="docs.rs docs" />
   </a>
@@ -27,15 +27,15 @@
 
 <div align="center">
   <h3>
-    <a href="https://docs.rs/{{PROJECTNAME}}">
+    <a href="https://docs.rs/async-sse">
       API Docs
     </a>
     <span> | </span>
-    <a href="https://github.com/{{USERNAME}}/{{PROJECTNAME}}/releases">
+    <a href="https://github.com/{{USERNAME}}/async-sse/releases">
       Releases
     </a>
     <span> | </span>
-    <a href="https://github.com/{{USERNAME}}/{{PROJECTNAME}}/blob/master.github/CONTRIBUTING.md">
+    <a href="https://github.com/{{USERNAME}}/async-sse/blob/master.github/CONTRIBUTING.md">
       Contributing
     </a>
   </h3>
@@ -43,7 +43,7 @@
 
 ## Installation
 ```sh
-$ cargo add {{PROJECTNAME}}
+$ cargo add async-sse
 ```
 
 ## Safety
@@ -57,9 +57,9 @@ look at some of these issues:
 - [Issues labeled "good first issue"][good-first-issue]
 - [Issues labeled "help wanted"][help-wanted]
 
-[contributing]: https://github.com/{{USERNAME}}/{{PROJECTNAME}}/blob/master.github/CONTRIBUTING.md
-[good-first-issue]: https://github.com/{{USERNAME}}/{{PROJECTNAME}}/labels/good%20first%20issue
-[help-wanted]: https://github.com/{{USERNAME}}/{{PROJECTNAME}}/labels/help%20wanted
+[contributing]: https://github.com/{{USERNAME}}/async-sse/blob/master.github/CONTRIBUTING.md
+[good-first-issue]: https://github.com/{{USERNAME}}/async-sse/labels/good%20first%20issue
+[help-wanted]: https://github.com/{{USERNAME}}/async-sse/labels/help%20wanted
 
 ## License
 

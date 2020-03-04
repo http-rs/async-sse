@@ -1,10 +1,10 @@
 [package]
-name = "{{PROJECTNAME}}"
+name = "async-sse"
 version = "1.0.0"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/{{USERNAME}}/{{PROJECTNAME}}"
-documentation = "https://docs.rs/{{PROJECTNAME}}"
-description = "{{DESCRIPTION}}"
+repository = "https://github.com/{{USERNAME}}/async-sse"
+documentation = "https://docs.rs/async-sse"
+description = "Async Server Sent Event parser and encoder"
 readme = "README.md"
 edition = "2018"
 keywords = []
@@ -16,5 +16,9 @@ authors = [
 [features]
 
 [dependencies]
+http-types = "1.0.1"
+async-std = { version = "1.5.0", features = ["attributes"] }
+log = "0.4.8"
 
 [dev-dependencies]
+femme = "1.3.0"
