@@ -1,4 +1,4 @@
-/// An SSE message.
+/// A data event.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Message {
     /// The ID of this event.
@@ -25,5 +25,10 @@ impl Message {
     /// Access the event data.
     pub fn data(&self) -> &[u8] {
         &self.data
+    }
+
+    /// Convert the message into the data payload.
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.data
     }
 }

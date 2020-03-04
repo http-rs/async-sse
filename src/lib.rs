@@ -1,6 +1,29 @@
 //! Async Server Sent Event parser and encoder.
 //!
-//! ## References
+//! # Example
+//!
+//! ```
+//! use async_sse::{decode, encode, Event};
+//! use async_std::io::Cursor;
+//! use async_std::prelude::*;
+//!
+//! #[async_std::main]
+//! async fn main() -> http_types::Result<()> {
+//!     let buf = Cursor::new(vec![]);
+//!     let mut encoder = encode(buf);
+//!     encoder.send("cat", b"chashu", None).await?;
+//!
+//!     let mut buf = encoder.into_writer();
+//!     buf.set_position(0);
+//!
+//!     let mut reader = decode(buf);
+//!     let event: Event = reader.next().await.unwrap()?;
+//!     # let _ = event;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! # References
 //!
 //! - [SSE Spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#concept-event-stream-last-event-id)
 //! - [EventSource web platform tests](https://github.com/web-platform-tests/wpt/tree/master/eventsource)
