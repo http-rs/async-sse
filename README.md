@@ -57,6 +57,11 @@ look at some of these issues:
 [good-first-issue]: https://github.com/http-rs/async-sse/labels/good%20first%20issue
 [help-wanted]: https://github.com/http-rs/async-sse/labels/help%20wanted
 
+## Acknowledgements
+
+This project was adapted from
+[goto-bus-stop/sse-codec](https://github.com/goto-bus-stop/sse-codec).
+
 ## License
 
 <sup>

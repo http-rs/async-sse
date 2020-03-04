@@ -10,7 +10,8 @@ edition = "2018"
 keywords = []
 categories = []
 authors = [
-    "Yoshua Wuyts <yoshuawuyts@gmail.com>"
+    "Renée Kooi <renee@kooi.me>",
+    "Yoshua Wuyts <yoshuawuyts@gmail.com>",
 ]
 
 [features]
