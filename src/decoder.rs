@@ -43,19 +43,20 @@ pub struct Decoder<R: AsyncBufRead + Unpin> {
 impl<R: AsyncBufRead + Unpin> Decoder<R> {
     fn take_message(&mut self) -> Option<Message> {
         if self.data.is_empty() {
-            // If the data buffer is an empty string, set the data buffer and the event type buffer to the empty string [and return.]
+            // If the data buffer is an empty string, set the data buffer and
+            // the event type buffer to the empty string [and return.]
             self.event_type.take();
             None
         } else {
+            // Removing tailing newlines
             if self.data.ends_with(&[b'\n']) {
                 self.data.pop();
             }
-            Some(Message {
-                // The _last event ID_ buffer persists between messages.
-                id: self.last_event_id.clone(),
-                event: self.event_type.take().unwrap_or("message".to_string()),
-                data: std::mem::replace(&mut self.data, vec![]),
-            })
+            let event = self.event_type.take().unwrap_or("message".to_string());
+            let data = std::mem::replace(&mut self.data, vec![]);
+            // The _last event ID_ buffer persists between messages.
+            let id = self.last_event_id.clone();
+            Some(Message { id, event, data })
         }
     }
 }
@@ -63,8 +64,11 @@ impl<R: AsyncBufRead + Unpin> Decoder<R> {
 impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
     type Item = http_types::Result<Message>;
 
+    // This function uses two loops: one to get lines from the reader.
+    // And one to parse each line delimited by `:`.
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
+            // Get the next line, if available.
             let line = match task::ready!(Pin::new(&mut self.lines).poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(Err(e)) => return Poll::Ready(Some(Err(e.into()))),

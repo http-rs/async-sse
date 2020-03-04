@@ -18,7 +18,7 @@ impl Message {
     }
 
     /// Get the message event name.
-    pub fn event_name(&self) -> &String {
+    pub fn name(&self) -> &String {
         &self.event
     }
 

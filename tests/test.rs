@@ -1,56 +1,45 @@
-use async_sse::{decode, encode};
+use async_sse::{decode, encode, Message};
 use async_std::io::Cursor;
 use async_std::prelude::*;
 
+/// Assert a Message.
+fn assert_msg(msg: &Message, name: &str, data: &str, id: Option<&'static str>) {
+    assert_eq!(msg.id(), &id.map(|s| s.to_owned()));
+    assert_eq!(msg.name(), name);
+    assert_eq!(msg.data(), data.as_bytes());
+}
+
 #[async_std::test]
 async fn simple_event() -> http_types::Result<()> {
-    // femme::start(log::LevelFilter::Trace)?;
     let input = Cursor::new("event: add\ndata: test\ndata: test2\n\n");
     let mut reader = decode(input);
     let msg = reader.next().await.unwrap()?;
     assert_eq!(msg.id(), &None);
-    assert_eq!(msg.event_name(), "add");
+    assert_eq!(msg.name(), "add");
     assert_eq!(msg.data(), b"test\ntest2");
     Ok(())
 }
 
 #[async_std::test]
 async fn decode_stream_when_fed_by_line() -> http_types::Result<()> {
-    let input = Cursor::new(":ok\nevent:message\nid:id1\ndata:data1\n\n");
-    let reader = decode(input);
+    let reader = decode(Cursor::new(":ok\nevent:message\nid:id1\ndata:data1\n\n"));
     let res = reader.map(|i| i.unwrap()).collect::<Vec<_>>().await;
     assert_eq!(res.len(), 1);
-    let msg = res.get(0).unwrap();
-    assert_eq!(msg.id(), &Some("id1".to_string()));
-    assert_eq!(msg.event_name(), "message");
-    assert_eq!(msg.data(), b"data1");
+    assert_msg(&res.get(0).unwrap(), "message", "data1", Some("id1"));
     Ok(())
 }
 
-// #[test]
-// fn maintain_id_state() {
-//     let input: Vec<&str> = vec!["id:1", "data:messageone", "", "data:messagetwo", ""];
-
-//     let body_stream = stream::iter(input).map(|i| Ok(i.to_owned() + "\n"));
-
-//     let messages = decode_stream(body_stream.into_async_read());
-
-//     let mut result = None;
-//     async_std::task::block_on(async {
-//         result = Some(messages.map(|i| i.unwrap()).collect::<Vec<_>>().await);
-//     });
-
-//     let mut results = result.unwrap();
-//     assert_eq!(results.len(), 2);
-//     assert_eq!(
-//         results.remove(0),
-//         Event::message("message", "messageone", "1")
-//     );
-//     assert_eq!(
-//         results.remove(0),
-//         Event::message("message", "messagetwo", "1")
-//     );
-// }
+#[async_std::test]
+async fn maintain_id_state() -> http_types::Result<()> {
+    femme::start(log::LevelFilter::Trace)?;
+    let reader = decode(Cursor::new("id:1\ndata:messageone\ndata:messagetwo\n\n"));
+    let mut res = reader.map(|i| i.unwrap()).collect::<Vec<_>>().await;
+    assert_eq!(res.len(), 2);
+    assert_msg(&res.remove(0), "message", "messageone", Some("1"));
+    dbg!("big suppppp");
+    assert_msg(&res.remove(0), "message", "messagetwo", Some("1"));
+    Ok(())
+}
 
 // #[cfg(test)]
 // mod wpt {
