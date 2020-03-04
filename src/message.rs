@@ -5,8 +5,8 @@ pub struct Message {
     ///
     /// See also the [Server-Sent Events spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#concept-event-stream-last-event-id).
     pub(crate) id: Option<String>,
-    /// The event type. Defaults to "message" if no event name is provided.
-    pub(crate) event: String,
+    /// The event name. Defaults to "message" if no event name is provided.
+    pub(crate) name: String,
     /// The data for this event.
     pub(crate) data: Vec<u8>,
 }
@@ -19,7 +19,7 @@ impl Message {
 
     /// Get the message event name.
     pub fn name(&self) -> &String {
-        &self.event
+        &self.name
     }
 
     /// Access the event data.

@@ -14,11 +14,13 @@
 
 mod decoder;
 mod encoder;
+mod event;
 mod lines;
 mod message;
 
 pub use decoder::{decode, Decoder};
 pub use encoder::{encode, Encoder};
+pub use event::Event;
 pub use message::Message;
 
 pub(crate) use lines::Lines;

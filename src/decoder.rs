@@ -4,8 +4,8 @@ use async_std::task::{self, Context, Poll};
 
 use std::pin::Pin;
 
+use crate::Event;
 use crate::Lines;
-use crate::Message;
 
 /// Decode a new incoming SSE connection.
 pub fn decode<R>(reader: R) -> Decoder<R>
@@ -41,7 +41,7 @@ pub struct Decoder<R: AsyncBufRead + Unpin> {
 }
 
 impl<R: AsyncBufRead + Unpin> Decoder<R> {
-    fn take_message(&mut self) -> Option<Message> {
+    fn take_message(&mut self) -> Option<Event> {
         if self.data.is_empty() {
             // If the data buffer is an empty string, set the data buffer and
             // the event type buffer to the empty string [and return.]
@@ -52,17 +52,17 @@ impl<R: AsyncBufRead + Unpin> Decoder<R> {
             if self.data.ends_with(&[b'\n']) {
                 self.data.pop();
             }
-            let event = self.event_type.take().unwrap_or("message".to_string());
+            let name = self.event_type.take().unwrap_or("message".to_string());
             let data = std::mem::replace(&mut self.data, vec![]);
             // The _last event ID_ buffer persists between messages.
             let id = self.last_event_id.clone();
-            Some(Message { id, event, data })
+            Some(Event::new_msg(name, data, id))
         }
     }
 }
 
 impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
-    type Item = http_types::Result<Message>;
+    type Item = http_types::Result<Event>;
 
     // This function uses two loops: one to get lines from the reader.
     // And one to parse each line delimited by `:`.
@@ -127,9 +127,9 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                     (Some(""), None) => {
                         log::trace!("> end of frame");
                         match self.take_message() {
-                            Some(msg) => {
-                                log::trace!("> end of frame [msg]: {:?}", msg);
-                                return Poll::Ready(Some(Ok(msg)));
+                            Some(event) => {
+                                log::trace!("> end of frame [event]: {:?}", event);
+                                return Poll::Ready(Some(Ok(event)));
                             }
                             None => {
                                 log::trace!("> end of frame, break");
