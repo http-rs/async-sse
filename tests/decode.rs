@@ -270,62 +270,48 @@ async fn field_unknown() -> http_types::Result<()> {
 #[async_std::test]
 async fn leading_space() -> http_types::Result<()> {
     let input = "data:\ttest\rdata: \ndata:test\n\n";
-    let mut messages = decode(input.as_bytes());
-    assert_eq!(
-        messages.next().map(Result::unwrap),
-        Some(Event::Message {
-            id: None,
-            event: "message".into(),
-            data: "\ttest\n\ntest".into()
-        })
+    let mut reader = decode(Cursor::new(input));
+    assert_message(
+        &reader.next().await.unwrap()?,
+        "message",
+        "\ttest\n\ntest",
+        None,
     );
-    assert!(messages.next().is_none());
+    assert!(reader.next().await.is_none());
+    Ok(())
 }
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-newlines.htm
-// #[async_std::test]
-// async fn newlines() -> http_types::Result<()> {
-//     let input = "data:test\r\ndata\ndata:test\r\n\r";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "test\n\ntest".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-newlines.htm
+#[async_std::test]
+async fn newlines() -> http_types::Result<()> {
+    let input = "data:test\r\ndata\ndata:test\r\n\r";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(
+        &reader.next().await.unwrap()?,
+        "message",
+        "test\n\ntest",
+        None,
+    );
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-null-character.html
-// #[async_std::test]
-// async fn null_character() -> http_types::Result<()> {
-//     let input = "data:\0\n\n\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "\0".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-null-character.html
+#[async_std::test]
+async fn null_character() -> http_types::Result<()> {
+    let input = "data:\0\n\n\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(&reader.next().await.unwrap()?, "message", "\0", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-utf-8.htm
-// #[async_std::test]
-// async fn utf_8() -> http_types::Result<()> {
-//     let input = b"data:ok\xE2\x80\xA6\n\n";
-//     let mut messages = decode(input);
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "ok…".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-utf-8.htm
+#[async_std::test]
+async fn utf_8() -> http_types::Result<()> {
+    let input = b"data:ok\xE2\x80\xA6\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(&reader.next().await.unwrap()?, "message", "ok…", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
