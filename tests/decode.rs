@@ -1,4 +1,4 @@
-use async_sse::{decode, encode, Message};
+use async_sse::{decode, Message};
 use async_std::io::Cursor;
 use async_std::prelude::*;
 
@@ -6,7 +6,8 @@ use async_std::prelude::*;
 fn assert_msg(msg: &Message, name: &str, data: &str, id: Option<&'static str>) {
     assert_eq!(msg.id(), &id.map(|s| s.to_owned()));
     assert_eq!(msg.name(), name);
-    assert_eq!(msg.data(), data.as_bytes());
+    assert_eq!(String::from_utf8(msg.data().to_owned()).unwrap(), String::from_utf8(data.as_bytes().to_owned()).unwrap());
+    // assert_eq!(msg.data(), data.as_bytes());
 }
 
 #[async_std::test]
@@ -31,177 +32,99 @@ async fn decode_stream_when_fed_by_line() -> http_types::Result<()> {
 
 #[async_std::test]
 async fn maintain_id_state() -> http_types::Result<()> {
-    femme::start(log::LevelFilter::Trace)?;
-    let reader = decode(Cursor::new("id:1\ndata:messageone\ndata:messagetwo\n\n"));
+    let reader = decode(Cursor::new("id:1\ndata:messageone\n\ndata:messagetwo\n\n"));
     let mut res = reader.map(|i| i.unwrap()).collect::<Vec<_>>().await;
     assert_eq!(res.len(), 2);
     assert_msg(&res.remove(0), "message", "messageone", Some("1"));
-    dbg!("big suppppp");
     assert_msg(&res.remove(0), "message", "messagetwo", Some("1"));
     Ok(())
 }
 
-// #[cfg(test)]
-// mod wpt {
-// //! EventSource tests from the web-platform-tests suite. See https://github.com/web-platform-tests/wpt/tree/master/eventsource
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/event-data.html
+#[async_std::test]
+async fn event_data() -> http_types::Result<()> {
+    femme::start(log::LevelFilter::Trace)?;
+    let input = concat!(
+        "data:msg\n",
+        "data:msg\n",
+        "\n",
+        ":\n",
+        "falsefield:msg\n",
+        "\n",
+        "falsefield:msg\n",
+        "Data:data\n",
+        "\n",
+        "data\n",
+        "\n",
+        "data:end\n",
+        "\n",
+    );
+    let mut reader = decode(Cursor::new(input));
+    assert_msg(&reader.next().await.unwrap()?, "message", "msg\nmsg", None);
+    assert_msg(&reader.next().await.unwrap()?, "message", "end", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// struct DecodeIter<'a> {
-//     inner: FramedRead<&'a [u8], SSECodec>,
-// }
-// impl Iterator for DecodeIter<'_> {
-//     type Item = Result<Event, Error>;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let mut result = None;
-//         async_std::task::block_on(async {
-//             result = self.inner.next().await;
-//         });
-//         result
-//     }
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-bom.htm
+/// The byte order marker should only be stripped at the very start.
+#[async_std::test]
+async fn bom() -> http_types::Result<()> {
+    let mut input = vec![];
+    input.extend(b"\xEF\xBB\xBF");
+    input.extend(b"data:1\n");
+    input.extend(b"\n");
+    input.extend(b"\xEF\xBB\xBF");
+    input.extend(b"data:2\n");
+    input.extend(b"\n");
+    input.extend(b"data:3\n");
+    input.extend(b"\n");
+    let mut reader = decode(Cursor::new(input));
+    assert_msg(&reader.next().await.unwrap()?, "message", "1", None);
+    assert_msg(&reader.next().await.unwrap()?, "message", "3", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// fn decode(input: &[u8]) -> DecodeIter<'_> {
-//     DecodeIter {
-//         inner: decode_stream(input),
-//     }
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-bom-2.htm
+/// Only _one_ byte order marker should be stripped. This has two, which means one will remain
+/// in the first line, therefore making the first `data:1` invalid.
+#[async_std::test]
+async fn bom2() -> http_types::Result<()> {
+    let mut input = vec![];
+    input.extend(b"\xEF\xBB\xBF");
+    input.extend(b"\xEF\xBB\xBF");
+    input.extend(b"data:1\n");
+    input.extend(b"\n");
+    input.extend(b"data:2\n");
+    input.extend(b"\n");
+    input.extend(b"data:3\n");
+    input.extend(b"\n");
+    let mut reader = decode(Cursor::new(input));
+    assert_msg(&reader.next().await.unwrap()?, "message", "2", None);
+    assert_msg(&reader.next().await.unwrap()?, "message", "3", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/event-data.html
-// #[test]
-// fn data() {
-//     let input = concat!(
-//         "data:msg\n",
-//         "data:msg\n",
-//         "\n",
-//         ":\n",
-//         "falsefield:msg\n",
-//         "\n",
-//         "falsefield:msg\n",
-//         "Data:data\n",
-//         "\n",
-//         "data\n",
-//         "\n",
-//         "data:end\n",
-//         "\n",
-//     );
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "msg\nmsg".into()
-//         })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "".into()
-//         })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "end".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
-
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-bom.htm
-// /// The byte order marker should only be stripped at the very start.
-// #[test]
-// fn bom() {
-//     let mut input = vec![];
-//     input.extend(b"\xEF\xBB\xBF");
-//     input.extend(b"data:1\n");
-//     input.extend(b"\n");
-//     input.extend(b"\xEF\xBB\xBF");
-//     input.extend(b"data:2\n");
-//     input.extend(b"\n");
-//     input.extend(b"data:3\n");
-//     input.extend(b"\n");
-//     let mut messages = decode(&input);
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "1".into()
-//         })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "3".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
-
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-bom-2.htm
-// /// Only _one_ byte order marker should be stripped. This has two, which means one will remain
-// /// in the first line, therefore making the first `data:1` invalid.
-// #[test]
-// fn bom2() {
-//     let mut input = vec![];
-//     input.extend(b"\xEF\xBB\xBF");
-//     input.extend(b"\xEF\xBB\xBF");
-//     input.extend(b"data:1\n");
-//     input.extend(b"\n");
-//     input.extend(b"data:2\n");
-//     input.extend(b"\n");
-//     input.extend(b"data:3\n");
-//     input.extend(b"\n");
-//     let mut messages = decode(&input);
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "2".into()
-//         })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "3".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
-
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-comments.htm
-// #[test]
-// fn comments() {
-//     let longstring = "x".repeat(2049);
-//     let mut input = concat!("data:1\r", ":\0\n", ":\r\n", "data:2\n", ":").to_string();
-//     input.push_str(&longstring);
-//     input.push_str("\r");
-//     input.push_str("data:3\n");
-//     input.push_str(":data:fail\r");
-//     input.push_str(":");
-//     input.push_str(&longstring);
-//     input.push_str("\n");
-//     input.push_str("data:4\n\n");
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "1\n2\n3\n4".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-comments.htm
+#[async_std::test]
+async fn comments() -> http_types::Result<()> {
+    let longstring = "x".repeat(2049);
+    let mut input = concat!("data:1\r", ":\0\n", ":\r\n", "data:2\n", ":").to_string();
+    input.push_str(&longstring);
+    input.push_str("\r");
+    input.push_str("data:3\n");
+    input.push_str(":data:fail\r");
+    input.push_str(":");
+    input.push_str(&longstring);
+    input.push_str("\n");
+    input.push_str("data:4\n\n");
+    let mut reader = decode(Cursor::new(input));
+    assert_msg(&reader.next().await.unwrap()?, "message", "1\n2\n3\n4", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
 // /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-data-before-final-empty-line.htm
 // #[test]

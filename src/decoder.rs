@@ -85,7 +85,7 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
 
             let mut parts = line.splitn(2, ':');
             loop {
-                match dbg!((parts.next(), parts.next())) {
+                match (parts.next(), parts.next()) {
                     // If the field name is "retry":
                     (Some("retry"), Some(value)) if value.chars().all(|c| c.is_ascii_digit()) => {
                         log::trace!("> retry");
@@ -104,13 +104,13 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                     }
                     // If the field name is "data":
                     (Some("data"), value) => {
-                        log::trace!("> data");
+                        log::trace!("> data: {:?}", &value);
                         // Append the field value to the data buffer,
                         if let Some(value) = value {
                             self.data.extend(strip_leading_space_b(value.as_bytes()));
+                            // then append a single U+000A LINE FEED (LF) character to the data buffer.
+                            self.data.push(b'\n');
                         }
-                        // then append a single U+000A LINE FEED (LF) character to the data buffer.
-                        self.data.push(b'\n');
                     }
                     // If the field name is "id":
                     (Some("id"), Some(id_str)) if !id_str.contains(char::from(0)) => {
@@ -125,7 +125,16 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                     // End of frame
                     (Some(""), None) => {
                         log::trace!("> end of frame");
-                        return Poll::Ready(Ok(self.take_message()).transpose());
+                        match self.take_message() {
+                            Some(msg) => {
+                                log::trace!("> end of frame [msg]: {:?}", msg);
+                                return Poll::Ready(Some(Ok(msg)));
+                            }
+                            None => {
+                                log::trace!("> end of frame, break");
+                                break;
+                            }
+                        };
                     }
                     (_, _) => {
                         break;
