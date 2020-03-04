@@ -2,7 +2,7 @@ use crate::Message;
 
 use std::time::Duration;
 
-/// The kind of event sent.
+/// The kind of SSE event sent.
 #[derive(Debug, Eq, PartialEq)]
 pub enum Event {
     /// A retry frame, signaling a new retry duration must be used..

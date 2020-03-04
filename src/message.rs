@@ -1,4 +1,4 @@
-/// A data event.
+/// An SSE event with a data payload.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Message {
     /// The ID of this event.

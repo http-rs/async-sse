@@ -4,22 +4,20 @@
 //!
 //! ```
 //! use async_sse::{decode, encode, Event};
-//! use async_std::io::Cursor;
 //! use async_std::prelude::*;
+//! use async_std::io::BufReader;
+//! use async_std::task;
 //!
 //! #[async_std::main]
 //! async fn main() -> http_types::Result<()> {
-//!     let buf = Cursor::new(vec![]);
+//!     // Create an encoder + sender pair and send a message.
+//!     let (sender, encoder) = encode();
+//!     task::spawn(async move {
+//!         sender.send("cat", b"chashu", None).await;
+//!     });
 //!
-//!     // Encode messages to an AsyncWrite.
-//!     let mut encoder = encode(buf);
-//!     encoder.send("cat", b"chashu", None).await?;
-//!
-//!     let mut buf = encoder.into_writer();
-//!     buf.set_position(0);
-//!
-//!     // Decode messages from an AsyncRead.
-//!     let mut reader = decode(buf);
+//!     // Decode messages using a decoder.
+//!     let mut reader = decode(BufReader::new(encoder));
 //!     let event = reader.next().await.unwrap()?;
 //!     // Match and handle the event
 //!
@@ -40,12 +38,14 @@
 mod decoder;
 mod encoder;
 mod event;
+mod handshake;
 mod lines;
 mod message;
 
 pub use decoder::{decode, Decoder};
-pub use encoder::{encode, Encoder};
+pub use encoder::{encode, Encoder, Sender};
 pub use event::Event;
+pub use handshake::upgrade;
 pub use message::Message;
 
 pub(crate) use lines::Lines;

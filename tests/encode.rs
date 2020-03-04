@@ -1,6 +1,7 @@
 use async_sse::{decode, encode, Event};
-use async_std::io::Cursor;
+use async_std::io::BufReader;
 use async_std::prelude::*;
+use async_std::task;
 use std::time::Duration;
 
 /// Assert a Message.
@@ -24,15 +25,15 @@ fn assert_retry(event: &Event, dur: u64) {
         assert_eq!(dur, &expected);
     }
 }
+
 #[async_std::test]
 async fn encode_message() -> http_types::Result<()> {
-    let buf = Cursor::new(vec![]);
-    let mut encoder = encode(buf);
-    encoder.send("cat", b"chashu", None).await?;
-    let mut buf = encoder.into_writer();
-    buf.set_position(0);
+    let (sender, encoder) = encode();
+    task::spawn(async move {
+        sender.send("cat", b"chashu", None).await;
+    });
 
-    let mut reader = decode(buf);
+    let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
     assert_message(&event, "cat", "chashu", None);
     Ok(())
@@ -40,13 +41,12 @@ async fn encode_message() -> http_types::Result<()> {
 
 #[async_std::test]
 async fn encode_message_with_id() -> http_types::Result<()> {
-    let buf = Cursor::new(vec![]);
-    let mut encoder = encode(buf);
-    encoder.send("cat", b"chashu", Some("0")).await?;
-    let mut buf = encoder.into_writer();
-    buf.set_position(0);
+    let (sender, encoder) = encode();
+    task::spawn(async move {
+        sender.send("cat", b"chashu", Some("0")).await;
+    });
 
-    let mut reader = decode(buf);
+    let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
     assert_message(&event, "cat", "chashu", Some("0"));
     Ok(())
@@ -54,13 +54,13 @@ async fn encode_message_with_id() -> http_types::Result<()> {
 
 #[async_std::test]
 async fn encode_retry() -> http_types::Result<()> {
-    let buf = Cursor::new(vec![]);
-    let mut encoder = encode(buf);
-    encoder.send_retry(Duration::from_secs(12), None).await?;
-    let mut buf = encoder.into_writer();
-    buf.set_position(0);
+    let (sender, encoder) = encode();
+    task::spawn(async move {
+        let dur = Duration::from_secs(12);
+        sender.send_retry(dur, None).await;
+    });
 
-    let mut reader = decode(buf);
+    let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
     assert_retry(&event, 12);
     Ok(())
