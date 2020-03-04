@@ -178,148 +178,109 @@ async fn field_event_empty() -> http_types::Result<()> {
     Ok(())
 }
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-event.htm
-// #[async_std::test]
-// async fn field_event() -> http_types::Result<()> {
-//     let input = "event:test\ndata:x\n\ndata:x\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "test".into(),
-//             data: "x".into()
-//         })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "x".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-event.htm
+#[async_std::test]
+async fn field_event() -> http_types::Result<()> {
+    let input = "event:test\ndata:x\n\ndata:x\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(&reader.next().await.unwrap()?, "test", "x", None);
+    assert_message(&reader.next().await.unwrap()?, "message", "x", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-id.htm
-// #[test]
-// #[ignore]
-// fn field_id() {
-//     unimplemented!()
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-id.htm
+#[test]
+#[ignore]
+fn field_id() {
+    unimplemented!()
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-id-2.htm
-// #[test]
-// #[ignore]
-// fn field_id_2() {
-//     unimplemented!()
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-id-2.htm
+#[test]
+#[ignore]
+fn field_id_2() {
+    unimplemented!()
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-parsing.htm
-// #[async_std::test]
-// async fn field_parsing() -> http_types::Result<()> {
-//     let input = "data:\0\ndata:  2\rData:1\ndata\0:2\ndata:1\r\0data:4\nda-ta:3\rdata_5\ndata:3\rdata:\r\n data:32\ndata:4\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "\0\n 2\n1\n3\n\n4".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-parsing.htm
+#[async_std::test]
+async fn field_parsing() -> http_types::Result<()> {
+    let input = "data:\0\ndata:  2\rData:1\ndata\0:2\ndata:1\r\0data:4\nda-ta:3\rdata_5\ndata:3\rdata:\r\n data:32\ndata:4\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(
+        &reader.next().await.unwrap()?,
+        "message",
+        "\0\n 2\n1\n3\n\n4",
+        None,
+    );
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry-bogus.htm
-// #[async_std::test]
-// async fn field_retry_bogus() -> http_types::Result<()> {
-//     let input = "retry:3000\nretry:1000x\ndata:x\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Retry { retry: 3000 })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "x".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry-bogus.htm
+#[async_std::test]
+async fn field_retry_bogus() -> http_types::Result<()> {
+    let input = "retry:3000\nretry:1000x\ndata:x\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_retry(&reader.next().await.unwrap()?, 3000);
+    assert_message(&reader.next().await.unwrap()?, "message", "x", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry-empty.htm
-// #[async_std::test]
-// async fn field_retry_empty() -> http_types::Result<()> {
-//     let input = "retry\ndata:test\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "test".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry-empty.htm
+#[async_std::test]
+async fn field_retry_empty() -> http_types::Result<()> {
+    let input = "retry\ndata:test\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(&reader.next().await.unwrap()?, "message", "test", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry.htm
-// #[async_std::test]
-// async fn field_retry() -> http_types::Result<()> {
-//     let input = "retry:03000\ndata:x\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Retry { retry: 3000 })
-//     );
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "x".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-retry.htm
+#[async_std::test]
+async fn field_retry() -> http_types::Result<()> {
+    let input = "retry:03000\ndata:x\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_retry(&reader.next().await.unwrap()?, 3000);
+    assert_message(&reader.next().await.unwrap()?, "message", "x", None);
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-unknown.htm
-// #[async_std::test]
-// async fn field_unknown() -> http_types::Result<()> {
-//     let input =
-//         "data:test\n data\ndata\nfoobar:xxx\njustsometext\n:thisisacommentyay\ndata:test\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "test\n\ntest".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-field-unknown.htm
+#[async_std::test]
+async fn field_unknown() -> http_types::Result<()> {
+    let input =
+        "data:test\n data\ndata\nfoobar:xxx\njustsometext\n:thisisacommentyay\ndata:test\n\n";
+    let mut reader = decode(Cursor::new(input));
+    assert_message(
+        &reader.next().await.unwrap()?,
+        "message",
+        "test\n\ntest",
+        None,
+    );
+    assert!(reader.next().await.is_none());
+    Ok(())
+}
 
-// /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-leading-space.htm
-// #[async_std::test]
-// async fn leading_space() -> http_types::Result<()> {
-//     let input = "data:\ttest\rdata: \ndata:test\n\n";
-//     let mut messages = decode(input.as_bytes());
-//     assert_eq!(
-//         messages.next().map(Result::unwrap),
-//         Some(Event::Message {
-//             id: None,
-//             event: "message".into(),
-//             data: "\ttest\n\ntest".into()
-//         })
-//     );
-//     assert!(messages.next().is_none());
-// }
+/// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-leading-space.htm
+#[async_std::test]
+async fn leading_space() -> http_types::Result<()> {
+    let input = "data:\ttest\rdata: \ndata:test\n\n";
+    let mut messages = decode(input.as_bytes());
+    assert_eq!(
+        messages.next().map(Result::unwrap),
+        Some(Event::Message {
+            id: None,
+            event: "message".into(),
+            data: "\ttest\n\ntest".into()
+        })
+    );
+    assert!(messages.next().is_none());
+}
 
 // /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-newlines.htm
 // #[async_std::test]
