@@ -1,10 +1,10 @@
-use async_std::io::prelude::*;
 use async_std::io::BufRead as AsyncBufRead;
 use async_std::stream::Stream;
 use async_std::task::{self, Context, Poll};
 
 use std::pin::Pin;
 
+use crate::Lines;
 use crate::Message;
 
 /// Decode a new incoming SSE connection.
@@ -13,7 +13,7 @@ where
     R: AsyncBufRead + Unpin,
 {
     Decoder {
-        lines: reader.lines(),
+        lines: Lines::new(reader),
         processed_bom: false,
         buffer: vec![],
         last_event_id: None,
@@ -26,7 +26,7 @@ where
 #[derive(Debug)]
 pub struct Decoder<R: AsyncBufRead + Unpin> {
     /// The lines decoder.
-    lines: async_std::io::Lines<R>,
+    lines: Lines<R>,
     /// Have we processed the optional Byte Order Marker on the first line?
     processed_bom: bool,
     /// Was the last character of the previous line a \r?
@@ -83,6 +83,7 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                 &line
             };
 
+            log::trace!("> new line: {:?}", line);
             let mut parts = line.splitn(2, ':');
             loop {
                 match (parts.next(), parts.next()) {

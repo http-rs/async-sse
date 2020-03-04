@@ -19,6 +19,11 @@ authors = [
 http-types = "1.0.1"
 async-std = { version = "1.5.0", features = ["attributes"] }
 log = "0.4.8"
+pin-project-lite = "0.1.4"
+memchr = "2.3.3"
 
 [dev-dependencies]
 femme = "1.3.0"
+
+[patch.crates-io]
+async-std = { path = "../async-std" }

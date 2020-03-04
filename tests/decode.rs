@@ -6,7 +6,10 @@ use async_std::prelude::*;
 fn assert_msg(msg: &Message, name: &str, data: &str, id: Option<&'static str>) {
     assert_eq!(msg.id(), &id.map(|s| s.to_owned()));
     assert_eq!(msg.name(), name);
-    assert_eq!(String::from_utf8(msg.data().to_owned()).unwrap(), String::from_utf8(data.as_bytes().to_owned()).unwrap());
+    assert_eq!(
+        String::from_utf8(msg.data().to_owned()).unwrap(),
+        String::from_utf8(data.as_bytes().to_owned()).unwrap()
+    );
     // assert_eq!(msg.data(), data.as_bytes());
 }
 
@@ -43,7 +46,6 @@ async fn maintain_id_state() -> http_types::Result<()> {
 /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/event-data.html
 #[async_std::test]
 async fn event_data() -> http_types::Result<()> {
-    femme::start(log::LevelFilter::Trace)?;
     let input = concat!(
         "data:msg\n",
         "data:msg\n",
@@ -110,6 +112,7 @@ async fn bom2() -> http_types::Result<()> {
 /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/format-comments.htm
 #[async_std::test]
 async fn comments() -> http_types::Result<()> {
+    femme::start(log::LevelFilter::Trace)?;
     let longstring = "x".repeat(2049);
     let mut input = concat!("data:1\r", ":\0\n", ":\r\n", "data:2\n", ":").to_string();
     input.push_str(&longstring);
@@ -121,7 +124,12 @@ async fn comments() -> http_types::Result<()> {
     input.push_str("\n");
     input.push_str("data:4\n\n");
     let mut reader = decode(Cursor::new(input));
-    assert_msg(&reader.next().await.unwrap()?, "message", "1\n2\n3\n4", None);
+    assert_msg(
+        &reader.next().await.unwrap()?,
+        "message",
+        "1\n2\n3\n4",
+        None,
+    );
     assert!(reader.next().await.is_none());
     Ok(())
 }
