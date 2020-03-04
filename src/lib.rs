@@ -10,14 +10,19 @@
 //! #[async_std::main]
 //! async fn main() -> http_types::Result<()> {
 //!     let buf = Cursor::new(vec![]);
+//!
+//!     // Encode messages to an AsyncWrite.
 //!     let mut encoder = encode(buf);
 //!     encoder.send("cat", b"chashu", None).await?;
 //!
 //!     let mut buf = encoder.into_writer();
 //!     buf.set_position(0);
 //!
+//!     // Decode messages from an AsyncRead.
 //!     let mut reader = decode(buf);
-//!     let event: Event = reader.next().await.unwrap()?;
+//!     let event = reader.next().await.unwrap()?;
+//!     // Match and handle the event
+//!
 //!     # let _ = event;
 //!     Ok(())
 //! }
