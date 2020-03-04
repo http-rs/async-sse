@@ -2,7 +2,7 @@
 name = "async-sse"
 version = "1.0.1"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/{{USERNAME}}/async-sse"
+repository = "https://github.com/http-rs/async-sse"
 documentation = "https://docs.rs/async-sse"
 description = "Async Server Sent Event parser and encoder"
 readme = "README.md"

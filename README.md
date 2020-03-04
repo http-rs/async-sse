@@ -31,11 +31,11 @@
       API Docs
     </a>
     <span> | </span>
-    <a href="https://github.com/{{USERNAME}}/async-sse/releases">
+    <a href="https://github.com/http-rs/async-sse/releases">
       Releases
     </a>
     <span> | </span>
-    <a href="https://github.com/{{USERNAME}}/async-sse/blob/master.github/CONTRIBUTING.md">
+    <a href="https://github.com/http-rs/async-sse/blob/master.github/CONTRIBUTING.md">
       Contributing
     </a>
   </h3>
@@ -53,9 +53,9 @@ look at some of these issues:
 - [Issues labeled "good first issue"][good-first-issue]
 - [Issues labeled "help wanted"][help-wanted]
 
-[contributing]: https://github.com/{{USERNAME}}/async-sse/blob/master.github/CONTRIBUTING.md
-[good-first-issue]: https://github.com/{{USERNAME}}/async-sse/labels/good%20first%20issue
-[help-wanted]: https://github.com/{{USERNAME}}/async-sse/labels/help%20wanted
+[contributing]: https://github.com/http-rs/async-sse/blob/master.github/CONTRIBUTING.md
+[good-first-issue]: https://github.com/http-rs/async-sse/labels/good%20first%20issue
+[help-wanted]: https://github.com/http-rs/async-sse/labels/help%20wanted
 
 ## License
 
