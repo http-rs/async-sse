@@ -1,12 +1,9 @@
-//! Async Server Sent Event parser and encoder
+//! Async Server Sent Event parser and encoder.
 //!
-//! # Examples
+//! ## References
 //!
-//! ```
-//! // tbi
-//! ```
-
-// ref: https://docs.rs/sse-codec/0.3.0/sse_codec/index.html
+//! - [SSE Spec](https://html.spec.whatwg.org/multipage/server-sent-events.html#concept-event-stream-last-event-id)
+//! - [EventSource web platform tests](https://github.com/web-platform-tests/wpt/tree/master/eventsource)
 
 #![forbid(rust_2018_idioms)]
 #![deny(missing_debug_implementations, nonstandard_style)]

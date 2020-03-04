@@ -93,8 +93,8 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                         // If the field value consists of only ASCII digits, then interpret the field value
                         // as an integer in base ten, and set the event stream's reconnection time to that
                         // integer. Otherwise, ignore the field.
-                        if let Ok(_time) = value.parse::<u64>() {
-                            todo!("Handle retry events"); // TODO
+                        if let Ok(time) = value.parse::<u64>() {
+                            return Poll::Ready(Some(Ok(Event::new_retry(time))));
                         }
                     }
                     // If the field name is "event":
@@ -110,8 +110,8 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
                         if let Some(value) = value {
                             self.data.extend(strip_leading_space_b(value.as_bytes()));
                             // then append a single U+000A LINE FEED (LF) character to the data buffer.
-                            self.data.push(b'\n');
                         }
+                        self.data.push(b'\n');
                     }
                     // If the field name is "id":
                     (Some("id"), Some(id_str)) if !id_str.contains(char::from(0)) => {
