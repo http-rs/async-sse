@@ -125,3 +125,9 @@ impl Sender {
         self.0.send(msg.into_bytes()).await;
     }
 }
+
+impl Clone for Sender {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
