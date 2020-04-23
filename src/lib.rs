@@ -13,7 +13,7 @@
 //!     // Create an encoder + sender pair and send a message.
 //!     let (sender, encoder) = encode();
 //!     task::spawn(async move {
-//!         sender.send("cat", b"chashu", None).await;
+//!         sender.send("cat", "chashu", None).await;
 //!     });
 //!
 //!     // Decode messages using a decoder.

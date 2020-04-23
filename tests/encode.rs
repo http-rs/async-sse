@@ -30,7 +30,7 @@ fn assert_retry(event: &Event, dur: u64) {
 async fn encode_message() -> http_types::Result<()> {
     let (sender, encoder) = encode();
     task::spawn(async move {
-        sender.send("cat", b"chashu", None).await;
+        sender.send("cat", "chashu", None).await;
     });
 
     let mut reader = decode(BufReader::new(encoder));
@@ -43,7 +43,7 @@ async fn encode_message() -> http_types::Result<()> {
 async fn encode_message_with_id() -> http_types::Result<()> {
     let (sender, encoder) = encode();
     task::spawn(async move {
-        sender.send("cat", b"chashu", Some("0")).await;
+        sender.send("cat", "chashu", Some("0")).await;
     });
 
     let mut reader = decode(BufReader::new(encoder));

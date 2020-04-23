@@ -95,7 +95,7 @@ pub fn encode() -> (Sender, Encoder) {
 
 impl Sender {
     /// Send a new message over SSE.
-    pub async fn send(&self, name: &str, data: &[u8], id: Option<&str>) {
+    pub async fn send(&self, name: &str, data: &str, id: Option<&str>) {
         // Write the event name
         let msg = format!("event:{}\n", name);
         self.0.send(msg.into_bytes()).await;
@@ -106,10 +106,8 @@ impl Sender {
         }
 
         // Write the data section, and end.
-        let mut msg = b"data:".to_vec();
-        msg.extend_from_slice(data);
-        msg.extend_from_slice(b"\n\n");
-        self.0.send(msg).await;
+        let msg = format!("data:{}\n\n", data);
+        self.0.send(msg.into_bytes()).await;
     }
 
     /// Send a new "retry" message over SSE.
