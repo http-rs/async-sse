@@ -26,6 +26,3 @@ pin-project-lite = "0.1.4"
 [dev-dependencies]
 femme = "1.3.0"
 async-std = { version = "1.5.0", features = ["attributes", "unstable"] }
-
-[patch.crates-io]
-async-std = { path = "../async-std" }
