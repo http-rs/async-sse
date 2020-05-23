@@ -18,7 +18,7 @@ authors = [
 
 [dependencies]
 async-std = { version = "1.5.0", features = ["unstable"] }
-http-types = "1.0.1"
+http-types = "2.0.0"
 log = "0.4.8"
 memchr = "2.3.3"
 pin-project-lite = "0.1.4"
