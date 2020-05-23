@@ -56,7 +56,7 @@ async fn maintain_id_state() -> http_types::Result<()> {
 /// https://github.com/web-platform-tests/wpt/blob/master/eventsource/event-data.html
 #[async_std::test]
 async fn event_data() -> http_types::Result<()> {
-    femme::start(log::LevelFilter::Trace)?;
+    femme::with_level(log::LevelFilter::Trace);
     let input = concat!(
         "data:event\n",
         "data:event\n\n",
