@@ -7,7 +7,7 @@ documentation = "https://docs.rs/async-sse"
 description = "Async Server Sent Event parser and encoder"
 readme = "README.md"
 edition = "2018"
-keywords = ["async", "server-sent events", "sse", "client", "server"]
+keywords = ["async", "server-sent-events", "sse", "client", "server"]
 categories = []
 authors = [
     "Renée Kooi <renee@kooi.me>",
