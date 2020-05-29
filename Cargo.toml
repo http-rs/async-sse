@@ -1,13 +1,13 @@
 [package]
 name = "async-sse"
-version = "2.1.0"
+version = "3.0.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/http-rs/async-sse"
 documentation = "https://docs.rs/async-sse"
 description = "Async Server Sent Event parser and encoder"
 readme = "README.md"
 edition = "2018"
-keywords = []
+keywords = ["async", "server-sent events", "sse", "client", "server"]
 categories = []
 authors = [
     "Renée Kooi <renee@kooi.me>",
