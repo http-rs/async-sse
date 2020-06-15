@@ -29,9 +29,7 @@ fn assert_retry(event: &Event, dur: u64) {
 #[async_std::test]
 async fn encode_message() -> http_types::Result<()> {
     let (sender, encoder) = encode();
-    task::spawn(async move {
-        sender.send("cat", "chashu", None).await;
-    });
+    task::spawn(async move { sender.send("cat", "chashu", None).await });
 
     let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
@@ -42,9 +40,7 @@ async fn encode_message() -> http_types::Result<()> {
 #[async_std::test]
 async fn encode_message_with_id() -> http_types::Result<()> {
     let (sender, encoder) = encode();
-    task::spawn(async move {
-        sender.send("cat", "chashu", Some("0")).await;
-    });
+    task::spawn(async move { sender.send("cat", "chashu", Some("0")).await });
 
     let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
@@ -63,5 +59,22 @@ async fn encode_retry() -> http_types::Result<()> {
     let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
     assert_retry(&event, 12);
+    Ok(())
+}
+
+#[async_std::test]
+async fn dropping_encoder() -> http_types::Result<()> {
+    let (sender, encoder) = encode();
+    let reader = BufReader::new(encoder);
+    let sender_clone = sender.clone();
+    task::spawn(async move { sender_clone.send("cat", "chashu", Some("0")).await.unwrap() });
+
+    //move the encoder into Lines, which gets dropped after this
+    assert_eq!(reader.lines().next().await.unwrap().unwrap(), "event:cat");
+
+    assert_eq!(
+        sender.send("cat", "nori", None).await,
+        Err(async_sse::DisconnectedError)
+    );
     Ok(())
 }

@@ -6,15 +6,26 @@ use async_std::io::Read as AsyncRead;
 use async_std::prelude::*;
 use async_std::task::{ready, Context, Poll};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
-pin_project_lite::pin_project! {
-    /// An SSE protocol encoder.
-    #[derive(Debug)]
-    pub struct Encoder {
-        buf: Option<Vec<u8>>,
-        #[pin]
-        receiver: sync::Receiver<Vec<u8>>,
-        cursor: usize,
+use pin_project::{pin_project, pinned_drop};
+
+#[pin_project(PinnedDrop)]
+/// An SSE protocol encoder.
+#[derive(Debug)]
+pub struct Encoder {
+    buf: Option<Vec<u8>>,
+    #[pin]
+    receiver: sync::Receiver<Vec<u8>>,
+    cursor: usize,
+    disconnected: Arc<AtomicBool>,
+}
+
+#[pinned_drop]
+impl PinnedDrop for Encoder {
+    fn drop(self: Pin<&mut Self>) {
+        self.disconnected.store(true, Ordering::Relaxed);
     }
 }
 
@@ -79,53 +90,80 @@ impl AsyncRead for Encoder {
 // }
 
 /// The sending side of the encoder.
-#[derive(Debug)]
-pub struct Sender(sync::Sender<Vec<u8>>);
+#[derive(Debug, Clone)]
+pub struct Sender {
+    sender: sync::Sender<Vec<u8>>,
+    disconnected: Arc<std::sync::atomic::AtomicBool>,
+}
 
 /// Create a new SSE encoder.
 pub fn encode() -> (Sender, Encoder) {
     let (sender, receiver) = sync::channel(1);
+    let disconnected = Arc::new(AtomicBool::new(false));
+
     let encoder = Encoder {
         receiver,
         buf: None,
         cursor: 0,
+        disconnected: disconnected.clone(),
     };
-    (Sender(sender), encoder)
+
+    let sender = Sender {
+        sender,
+        disconnected,
+    };
+
+    (sender, encoder)
 }
 
+/// An error that represents that the [Encoder] has been dropped.
+#[derive(Debug, Eq, PartialEq)]
+pub struct DisconnectedError;
+impl std::error::Error for DisconnectedError {}
+impl std::fmt::Display for DisconnectedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Disconnected")
+    }
+}
+
+#[must_use]
 impl Sender {
     /// Send a new message over SSE.
-    pub async fn send(&self, name: &str, data: &str, id: Option<&str>) {
+    pub async fn send(
+        &self,
+        name: &str,
+        data: &str,
+        id: Option<&str>,
+    ) -> Result<(), DisconnectedError> {
+        if self.disconnected.load(Ordering::Relaxed) {
+            return Err(DisconnectedError);
+        }
+
         // Write the event name
         let msg = format!("event:{}\n", name);
-        self.0.send(msg.into_bytes()).await;
+        self.sender.send(msg.into_bytes()).await;
 
         // Write the id
         if let Some(id) = id {
-            self.0.send(format!("id:{}\n", id).into_bytes()).await;
+            self.sender.send(format!("id:{}\n", id).into_bytes()).await;
         }
 
         // Write the data section, and end.
         let msg = format!("data:{}\n\n", data);
-        self.0.send(msg.into_bytes()).await;
+        self.sender.send(msg.into_bytes()).await;
+        Ok(())
     }
 
     /// Send a new "retry" message over SSE.
     pub async fn send_retry(&self, dur: Duration, id: Option<&str>) {
         // Write the id
         if let Some(id) = id {
-            self.0.send(format!("id:{}\n", id).into_bytes()).await;
+            self.sender.send(format!("id:{}\n", id).into_bytes()).await;
         }
 
         // Write the retry section, and end.
         let dur = dur.as_secs_f64() as u64;
         let msg = format!("retry:{}\n\n", dur);
-        self.0.send(msg.into_bytes()).await;
-    }
-}
-
-impl Clone for Sender {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+        self.sender.send(msg.into_bytes()).await;
     }
 }
