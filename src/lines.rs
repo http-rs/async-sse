@@ -2,29 +2,30 @@ use std::mem;
 use std::pin::Pin;
 use std::str;
 
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 
 use async_std::io::{self, BufRead};
 use async_std::stream::Stream;
 use async_std::task::{ready, Context, Poll};
 
-/// A stream of lines in a byte stream.
-///
-/// This stream is created by the [`lines`] method on types that implement [`BufRead`].
-///
-/// This type is an async version of [`std::io::Lines`].
-///
-/// [`lines`]: trait.BufRead.html#method.lines
-/// [`BufRead`]: trait.BufRead.html
-/// [`std::io::Lines`]: https://doc.rust-lang.org/std/io/struct.Lines.html
-#[pin_project]
-#[derive(Debug)]
-pub(crate) struct Lines<R> {
-    #[pin]
-    pub(crate) reader: R,
-    pub(crate) buf: String,
-    pub(crate) bytes: Vec<u8>,
-    pub(crate) read: usize,
+pin_project! {
+    /// A stream of lines in a byte stream.
+    ///
+    /// This stream is created by the [`lines`] method on types that implement [`BufRead`].
+    ///
+    /// This type is an async version of [`std::io::Lines`].
+    ///
+    /// [`lines`]: trait.BufRead.html#method.lines
+    /// [`BufRead`]: trait.BufRead.html
+    /// [`std::io::Lines`]: https://doc.rust-lang.org/std/io/struct.Lines.html
+    #[derive(Debug)]
+    pub(crate) struct Lines<R> {
+        #[pin]
+        pub(crate) reader: R,
+        pub(crate) buf: String,
+        pub(crate) bytes: Vec<u8>,
+        pub(crate) read: usize,
+    }
 }
 
 impl<R> Lines<R> {

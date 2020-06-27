@@ -43,7 +43,7 @@ mod lines;
 mod message;
 
 pub use decoder::{decode, Decoder};
-pub use encoder::{encode, DisconnectedError, Encoder, Sender};
+pub use encoder::{encode, Encoder, Sender};
 pub use event::Event;
 pub use handshake::upgrade;
 pub use message::Message;
