@@ -78,7 +78,7 @@ impl AsyncRead for Encoder {
 // }
 
 /// The sending side of the encoder.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Sender(async_channel::Sender<Vec<u8>>);
 
 /// Create a new SSE encoder.
@@ -130,11 +130,5 @@ impl Sender {
         let msg = format!("retry:{}\n\n", dur);
         self.inner_send(msg).await?;
         Ok(())
-    }
-}
-
-impl Clone for Sender {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
     }
 }
