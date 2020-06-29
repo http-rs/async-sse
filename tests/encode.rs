@@ -74,8 +74,11 @@ async fn dropping_encoder() -> http_types::Result<()> {
 
     std::mem::drop(reader);
 
-    assert!(matches!(sender.send("cat", "chashu", None).await,
-                     Err(e @ async_std::io::Error { .. })
-                            if e.kind() == async_std::io::ErrorKind::ConnectionAborted));
+    let response = sender.send("cat", "chashu", None).await;
+    assert!(response.is_err());
+    assert_eq!(
+        response.unwrap_err().kind(),
+        async_std::io::ErrorKind::ConnectionAborted
+    );
     Ok(())
 }
