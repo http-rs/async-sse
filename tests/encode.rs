@@ -53,7 +53,7 @@ async fn encode_retry() -> http_types::Result<()> {
     let (sender, encoder) = encode();
     task::spawn(async move {
         let dur = Duration::from_secs(12);
-        sender.send_retry(dur, None).await;
+        sender.send_retry(dur, None).await.unwrap();
     });
 
     let mut reader = decode(BufReader::new(encoder));
@@ -65,16 +65,20 @@ async fn encode_retry() -> http_types::Result<()> {
 #[async_std::test]
 async fn dropping_encoder() -> http_types::Result<()> {
     let (sender, encoder) = encode();
-    let reader = BufReader::new(encoder);
     let sender_clone = sender.clone();
-    task::spawn(async move { sender_clone.send("cat", "chashu", Some("0")).await.unwrap() });
+    task::spawn(async move { sender_clone.send("cat", "chashu", None).await });
 
-    //move the encoder into Lines, which gets dropped after this
-    assert_eq!(reader.lines().next().await.unwrap().unwrap(), "event:cat");
+    let mut reader = decode(BufReader::new(encoder));
+    let event = reader.next().await.unwrap()?;
+    assert_message(&event, "cat", "chashu", None);
 
+    std::mem::drop(reader);
+
+    let response = sender.send("cat", "chashu", None).await;
+    assert!(response.is_err());
     assert_eq!(
-        sender.send("cat", "nori", None).await,
-        Err(async_sse::DisconnectedError)
+        response.unwrap_err().kind(),
+        async_std::io::ErrorKind::ConnectionAborted
     );
     Ok(())
 }
