@@ -101,8 +101,8 @@ impl Sender {
     }
 
     /// Send a new message over SSE.
-    pub async fn send<'a, N>(&self, name: N, data: &str, id: Option<&str>) -> io::Result<()> 
-    where 
+    pub async fn send<'a, N>(&self, name: N, data: &str, id: Option<&str>) -> io::Result<()>
+    where
         N: Into<Option<&'a str>>,
     {
         // Write the event name
@@ -110,7 +110,7 @@ impl Sender {
             let msg = format!("event:{}\n", name);
             self.inner_send(msg).await?;
         }
-        
+
         // Write the id
         if let Some(id) = id {
             self.inner_send(format!("id:{}\n", id)).await?;
