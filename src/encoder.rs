@@ -1,4 +1,4 @@
-use async_std::io::Read as AsyncRead;
+use async_std::io::{BufRead as AsyncBufRead, Read as AsyncRead};
 use async_std::prelude::*;
 use async_std::task::{ready, Context, Poll};
 
@@ -50,26 +50,31 @@ impl AsyncRead for Encoder {
     }
 }
 
-// impl AsyncBufRead for Encoder {
-//     fn poll_fill_buf(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<&[u8]>> {
-//         match ready!(self.project().receiver.poll_next(cx)) {
-//             Some(buf) => match &self.buf {
-//                 None => self.project().buf = &mut Some(buf),
-//                 Some(local_buf) => local_buf.extend(buf),
-//             },
-//             None => {
-//                 if let None = self.buf {
-//                     self.project().buf = &mut Some(vec![]);
-//                 };
-//             }
-//         };
-//         Poll::Ready(Ok(self.buf.as_ref().unwrap()))
-//     }
+impl AsyncBufRead for Encoder {
+    fn poll_fill_buf(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<&[u8]>> {
+        let mut this = self.project();
+        // Request a new buffer if current one is exhausted.
+        if this.buf.len() <= *this.cursor {
+            match ready!(this.receiver.as_mut().poll_next(cx)) {
+                Some(buf) => {
+                    log::trace!("> Received a new buffer with len {}", buf.len());
+                    *this.buf = buf.into_boxed_slice();
+                    *this.cursor = 0;
+                }
+                None => {
+                    log::trace!("> Encoder done reading");
+                    return Poll::Ready(Ok(&[]));
+                }
+            };
+        }
+        Poll::Ready(Ok(&this.buf[*this.cursor..]))
+    }
 
-//     fn consume(self: Pin<&mut Self>, amt: usize) {
-//         Pin::new(self).cursor += amt;
-//     }
-// }
+    fn consume(self: Pin<&mut Self>, amt: usize) {
+        let this = self.project();
+        *this.cursor += amt;
+    }
+}
 
 /// The sending side of the encoder.
 #[derive(Debug, Clone)]
