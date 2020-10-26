@@ -1,4 +1,4 @@
-use async_std::io::Read as AsyncRead;
+use async_std::io::{BufRead as AsyncBufRead, Read as AsyncRead};
 use async_std::prelude::*;
 use async_std::task::{ready, Context, Poll};
 
@@ -10,72 +10,71 @@ pin_project_lite::pin_project! {
     /// An SSE protocol encoder.
     #[derive(Debug)]
     pub struct Encoder {
-        buf: Option<Vec<u8>>,
+        buf: Box<[u8]>,
+        cursor: usize,
         #[pin]
         receiver: async_channel::Receiver<Vec<u8>>,
-        cursor: usize,
     }
 }
 
 impl AsyncRead for Encoder {
     fn poll_read(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &mut [u8],
     ) -> Poll<io::Result<usize>> {
-        // Request a new buffer if we don't have one yet.
-        if let None = self.buf {
-            self.buf = match ready!(Pin::new(&mut self.receiver).poll_next(cx)) {
+        let mut this = self.project();
+        // Request a new buffer if current one is exhausted.
+        if this.buf.len() <= *this.cursor {
+            match ready!(this.receiver.as_mut().poll_next(cx)) {
                 Some(buf) => {
                     log::trace!("> Received a new buffer with len {}", buf.len());
-                    Some(buf)
+                    *this.buf = buf.into_boxed_slice();
+                    *this.cursor = 0;
                 }
                 None => {
                     log::trace!("> Encoder done reading");
                     return Poll::Ready(Ok(0));
                 }
             };
-        };
+        }
 
         // Write the current buffer to completion.
-        let local_buf = self.buf.as_mut().unwrap();
-        let local_len = local_buf.len();
+        let local_buf = &this.buf[*this.cursor..];
         let max = buf.len().min(local_buf.len());
         buf[..max].clone_from_slice(&local_buf[..max]);
-
-        self.cursor += max;
-
-        // Reset values if we're done reading.
-        if self.cursor == local_len {
-            self.buf = None;
-            self.cursor = 0;
-        };
+        *this.cursor += max;
 
         // Return bytes read.
         Poll::Ready(Ok(max))
     }
 }
 
-// impl AsyncBufRead for Encoder {
-//     fn poll_fill_buf(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<&[u8]>> {
-//         match ready!(self.project().receiver.poll_next(cx)) {
-//             Some(buf) => match &self.buf {
-//                 None => self.project().buf = &mut Some(buf),
-//                 Some(local_buf) => local_buf.extend(buf),
-//             },
-//             None => {
-//                 if let None = self.buf {
-//                     self.project().buf = &mut Some(vec![]);
-//                 };
-//             }
-//         };
-//         Poll::Ready(Ok(self.buf.as_ref().unwrap()))
-//     }
+impl AsyncBufRead for Encoder {
+    fn poll_fill_buf(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<&[u8]>> {
+        let mut this = self.project();
+        // Request a new buffer if current one is exhausted.
+        if this.buf.len() <= *this.cursor {
+            match ready!(this.receiver.as_mut().poll_next(cx)) {
+                Some(buf) => {
+                    log::trace!("> Received a new buffer with len {}", buf.len());
+                    *this.buf = buf.into_boxed_slice();
+                    *this.cursor = 0;
+                }
+                None => {
+                    log::trace!("> Encoder done reading");
+                    return Poll::Ready(Ok(&[]));
+                }
+            };
+        }
+        Poll::Ready(Ok(&this.buf[*this.cursor..]))
+    }
 
-//     fn consume(self: Pin<&mut Self>, amt: usize) {
-//         Pin::new(self).cursor += amt;
-//     }
-// }
+    fn consume(self: Pin<&mut Self>, amt: usize) {
+        let this = self.project();
+        *this.cursor += amt;
+    }
+}
 
 /// The sending side of the encoder.
 #[derive(Debug, Clone)]
@@ -86,7 +85,7 @@ pub fn encode() -> (Sender, Encoder) {
     let (sender, receiver) = async_channel::bounded(1);
     let encoder = Encoder {
         receiver,
-        buf: None,
+        buf: Box::default(),
         cursor: 0,
     };
     (Sender(sender), encoder)
