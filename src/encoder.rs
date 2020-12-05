@@ -100,10 +100,16 @@ impl Sender {
     }
 
     /// Send a new message over SSE.
-    pub async fn send(&self, name: &str, data: &str, id: Option<&str>) -> io::Result<()> {
+    pub async fn send(
+        &self,
+        name: impl Into<Option<&str>>,
+        data: &str,
+        id: Option<&str>,
+    ) -> io::Result<()> {
         // Write the event name
-        let msg = format!("event:{}\n", name);
-        self.inner_send(msg).await?;
+        if let Some(name) = name.into() {
+            self.inner_send(format!("event:{}\n", name)).await?;
+        }
 
         // Write the id
         if let Some(id) = id {

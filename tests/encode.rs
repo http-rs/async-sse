@@ -38,6 +38,28 @@ async fn encode_message() -> http_types::Result<()> {
 }
 
 #[async_std::test]
+async fn encode_message_some() -> http_types::Result<()> {
+    let (sender, encoder) = encode();
+    task::spawn(async move { sender.send(Some("cat"), "chashu", None).await });
+
+    let mut reader = decode(BufReader::new(encoder));
+    let event = reader.next().await.unwrap()?;
+    assert_message(&event, "cat", "chashu", None);
+    Ok(())
+}
+
+#[async_std::test]
+async fn encode_message_data_only() -> http_types::Result<()> {
+    let (sender, encoder) = encode();
+    task::spawn(async move { sender.send(None, "chashu", None).await });
+
+    let mut reader = decode(BufReader::new(encoder));
+    let event = reader.next().await.unwrap()?;
+    assert_message(&event, "message", "chashu", None);
+    Ok(())
+}
+
+#[async_std::test]
 async fn encode_message_with_id() -> http_types::Result<()> {
     let (sender, encoder) = encode();
     task::spawn(async move { sender.send("cat", "chashu", Some("0")).await });
@@ -45,6 +67,17 @@ async fn encode_message_with_id() -> http_types::Result<()> {
     let mut reader = decode(BufReader::new(encoder));
     let event = reader.next().await.unwrap()?;
     assert_message(&event, "cat", "chashu", Some("0"));
+    Ok(())
+}
+
+#[async_std::test]
+async fn encode_message_data_only_with_id() -> http_types::Result<()> {
+    let (sender, encoder) = encode();
+    task::spawn(async move { sender.send(None, "chashu", Some("0")).await });
+
+    let mut reader = decode(BufReader::new(encoder));
+    let event = reader.next().await.unwrap()?;
+    assert_message(&event, "message", "chashu", Some("0"));
     Ok(())
 }
 
