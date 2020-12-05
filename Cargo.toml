@@ -1,6 +1,6 @@
 [package]
 name = "async-sse"
-version = "4.1.0"
+version = "5.0.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/http-rs/async-sse"
 documentation = "https://docs.rs/async-sse"
