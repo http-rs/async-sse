@@ -1,6 +1,6 @@
-use async_std::io::{BufRead as AsyncBufRead, Read as AsyncRead};
-use async_std::prelude::*;
-use async_std::task::{ready, Context, Poll};
+use futures_lite::prelude::*;
+use futures_lite::ready;
+use std::task::{Context, Poll};
 
 use std::io;
 use std::pin::Pin;

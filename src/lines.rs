@@ -1,12 +1,13 @@
+use std::io;
 use std::mem;
 use std::pin::Pin;
 use std::str;
 
 use pin_project_lite::pin_project;
 
-use async_std::io::{self, BufRead};
-use async_std::stream::Stream;
-use async_std::task::{ready, Context, Poll};
+use futures_lite::prelude::*;
+use futures_lite::ready;
+use std::task::{Context, Poll};
 
 pin_project! {
     /// A stream of lines in a byte stream.
@@ -31,7 +32,7 @@ pin_project! {
 impl<R> Lines<R> {
     pub(crate) fn new(reader: R) -> Lines<R>
     where
-        R: BufRead + Unpin + Sized,
+        R: AsyncBufRead + Unpin + Sized,
     {
         Lines {
             reader,
@@ -42,12 +43,12 @@ impl<R> Lines<R> {
     }
 }
 
-impl<R: BufRead> Stream for Lines<R> {
+impl<R: AsyncBufRead> Stream for Lines<R> {
     type Item = io::Result<String>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let n = async_std::task::ready!(read_line_internal(
+        let n = ready!(read_line_internal(
             this.reader,
             cx,
             this.buf,
@@ -67,7 +68,7 @@ impl<R: BufRead> Stream for Lines<R> {
     }
 }
 
-fn read_line_internal<R: BufRead + ?Sized>(
+fn read_line_internal<R: AsyncBufRead + ?Sized>(
     reader: Pin<&mut R>,
     cx: &mut Context<'_>,
     buf: &mut String,
@@ -91,7 +92,7 @@ fn read_line_internal<R: BufRead + ?Sized>(
     }
 }
 
-fn read_until_internal<R: BufRead + ?Sized>(
+fn read_until_internal<R: AsyncBufRead + ?Sized>(
     mut reader: Pin<&mut R>,
     cx: &mut Context<'_>,
     buf: &mut Vec<u8>,
