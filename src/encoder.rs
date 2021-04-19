@@ -117,8 +117,11 @@ impl Sender {
         }
 
         // Write the data section, and end.
-        let msg = format!("data:{}\n\n", data);
-        self.inner_send(msg).await?;
+        for line in data.lines() {
+            let msg = format!("data:{}\n", line);
+            self.inner_send(msg).await?;
+        }
+        self.inner_send("\n").await?;
 
         Ok(())
     }

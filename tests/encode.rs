@@ -96,6 +96,17 @@ async fn encode_retry() -> http_types::Result<()> {
 }
 
 #[async_std::test]
+async fn encode_multiline_message() -> http_types::Result<()> {
+    let (sender, encoder) = encode();
+    task::spawn(async move { sender.send("cats", "chashu\nnori", None).await });
+
+    let mut reader = decode(BufReader::new(encoder));
+    let event = reader.next().await.unwrap()?;
+    assert_message(&event, "cats", "chashu\nnori", None);
+    Ok(())
+}
+
+#[async_std::test]
 async fn dropping_encoder() -> http_types::Result<()> {
     let (sender, encoder) = encode();
     let sender_clone = sender.clone();
