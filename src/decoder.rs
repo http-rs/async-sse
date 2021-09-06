@@ -1,11 +1,11 @@
-use async_std::io::BufRead as AsyncBufRead;
-use async_std::stream::Stream;
-use async_std::task::{self, Context, Poll};
+use crate::Lines;
+use futures_lite::prelude::*;
+use futures_lite::ready;
+use std::task::{Context, Poll};
 
 use std::pin::Pin;
 
 use crate::Event;
-use crate::Lines;
 
 /// Decode a new incoming SSE connection.
 pub fn decode<R>(reader: R) -> Decoder<R>
@@ -69,7 +69,7 @@ impl<R: AsyncBufRead + Unpin> Stream for Decoder<R> {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         loop {
             // Get the next line, if available.
-            let line = match task::ready!(Pin::new(&mut self.lines).poll_next(cx)) {
+            let line = match ready!(Pin::new(&mut self.lines).poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(Err(e)) => return Poll::Ready(Some(Err(e.into()))),
                 Some(Ok(line)) => line,
